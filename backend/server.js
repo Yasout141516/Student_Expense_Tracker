@@ -17,6 +17,12 @@ app.use(cors()); // Enable CORS for frontend requests
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+
+// Mount routes
+app.use('/api/auth', authRoutes);
+
 // Basic test route
 app.get('/', (req, res) => {
   res.json({ 
@@ -61,8 +67,8 @@ const PORT = process.env.PORT || 5000;
 // Start server
 app.listen(PORT, () => {
   console.log('================================');
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV}`);
-  console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
+  console.log('Server running on http://localhost:' + PORT);
+  console.log('Environment: ' + process.env.NODE_ENV);
+  console.log('Started at: ' + new Date().toLocaleString());
   console.log('================================');
 });
