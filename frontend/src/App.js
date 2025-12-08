@@ -8,7 +8,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Expenses from './pages/Expenses';
 import Income from './pages/Income';
-
+import Budget from './pages/Budget';
+import Goals from './pages/Goals';
 
 function App() {
   return (
@@ -58,7 +59,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <div>Budget Page - Coming Soon</div>
+                  <Budget />
                 </MainLayout>
               </ProtectedRoute>
             }
@@ -69,7 +70,7 @@ function App() {
             element={
               <ProtectedRoute>
                 <MainLayout>
-                  <div>Goals Page - Coming Soon</div>
+                  <Goals />
                 </MainLayout>
               </ProtectedRoute>
             }

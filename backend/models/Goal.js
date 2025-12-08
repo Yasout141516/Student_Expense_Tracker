@@ -6,7 +6,7 @@ const goalSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'Goal must belong to a user']
   },
-  goalName: {
+  name: {  // ⭐ Should be 'name', not 'goalName'
     type: String,
     required: [true, 'Please provide a goal name'],
     trim: true,
@@ -14,8 +14,8 @@ const goalSchema = new mongoose.Schema({
   },
   targetAmount: {
     type: Number,
-    required: [true, 'Please provide a target amount'],
-    min: [1, 'Target amount must be at least 1']
+    required: [true, 'Please provide target amount'],
+    min: [0, 'Target amount cannot be negative']
   },
   currentAmount: {
     type: Number,
@@ -24,7 +24,7 @@ const goalSchema = new mongoose.Schema({
   },
   targetDate: {
     type: Date,
-    required: [true, 'Please provide a target date']
+    required: [true, 'Please provide target date']
   },
   isCompleted: {
     type: Boolean,
@@ -37,24 +37,6 @@ const goalSchema = new mongoose.Schema({
 });
 
 // Index for faster queries
-goalSchema.index({ userId: 1, isCompleted: 1 });
-
-// Virtual property: Progress percentage
-goalSchema.virtual('progressPercentage').get(function() {
-  return Math.round((this.currentAmount / this.targetAmount) * 100);
-});
-
-// Virtual property: Days remaining
-goalSchema.virtual('daysRemaining').get(function() {
-  const today = new Date();
-  const target = new Date(this.targetDate);
-  const diffTime = target - today;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 0 ? diffDays : 0;
-});
-
-// Include virtuals in JSON output
-goalSchema.set('toJSON', { virtuals: true });
-goalSchema.set('toObject', { virtuals: true });
+goalSchema.index({ userId: 1, targetDate: 1 });
 
 module.exports = mongoose.model('Goal', goalSchema);

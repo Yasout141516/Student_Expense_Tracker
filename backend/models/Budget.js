@@ -9,17 +9,18 @@ const budgetSchema = new mongoose.Schema({
   categoryId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    default: null // null means overall budget (not category-specific)
+    required: [true, 'Please provide a category']
   },
-  month: {
-    type: Date,
-    required: [true, 'Please provide a month'],
-    // Store as first day of month (e.g., 2024-12-01)
-  },
-  limitAmount: {
+  limit: {
     type: Number,
     required: [true, 'Please provide a budget limit'],
-    min: [0, 'Budget limit must be positive']
+    min: [0, 'Limit cannot be negative']
+  },
+  period: {
+    type: String,
+    required: [true, 'Please specify budget period'],
+    enum: ['daily', 'weekly', 'monthly'],
+    default: 'monthly'
   },
   createdAt: {
     type: Date,
@@ -27,7 +28,10 @@ const budgetSchema = new mongoose.Schema({
   }
 });
 
-// Compound index: One budget per user/category/month combination
-budgetSchema.index({ userId: 1, categoryId: 1, month: 1 }, { unique: true });
+// Index for faster queries
+budgetSchema.index({ userId: 1, categoryId: 1, period: 1 });
+
+// Compound unique index to prevent duplicate budgets for same category/period
+budgetSchema.index({ userId: 1, categoryId: 1, period: 1 }, { unique: true });
 
 module.exports = mongoose.model('Budget', budgetSchema);

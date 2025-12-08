@@ -72,10 +72,10 @@ const getGoal = async (req, res) => {
 // @access  Private
 const createGoal = async (req, res) => {
   try {
-    const { goalName, targetAmount, currentAmount, targetDate } = req.body;
+    const { name, targetAmount, currentAmount, targetDate } = req.body;
 
     // Validation
-    if (!goalName || !targetAmount || !targetDate) {
+    if (!name || !targetAmount || !targetDate) {
       return res.status(400).json({
         success: false,
         message: 'Please provide goal name, target amount, and target date'
@@ -85,7 +85,7 @@ const createGoal = async (req, res) => {
     // Create goal
     const goal = await Goal.create({
       userId: req.user._id,
-      goalName,
+      name,
       targetAmount,
       currentAmount: currentAmount || 0,
       targetDate
