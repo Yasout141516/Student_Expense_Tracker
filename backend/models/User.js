@@ -26,10 +26,10 @@ const userSchema = new mongoose.Schema({
     select: false // Don't include password in queries by default
   },
   currency: {
-    type: String,
-    default: 'HKD',
-    enum: ['HKD', 'USD', 'EUR', 'GBP', 'JPY', 'CNY']
-  },
+  type: String,
+  default: 'BDT',
+  enum: ['BDT', 'HKD', 'USD', 'EUR', 'GBP', 'JPY', 'CNY']
+},
   createdAt: {
     type: Date,
     default: Date.now

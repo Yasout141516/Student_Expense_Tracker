@@ -1,0 +1,12 @@
+# Disable source maps for faster builds
+GENERATE_SOURCEMAP=false
+
+# Disable ESLint warnings
+DISABLE_ESLINT_PLUGIN=true
+
+# Speed up builds
+FAST_REFRESH=true
+
+# Skip TypeScript checking (we're using JS)
+TSC_COMPILE_ON_ERROR=true
+ESLINT_NO_DEV_ERRORS=true

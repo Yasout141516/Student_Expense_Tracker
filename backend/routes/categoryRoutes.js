@@ -12,7 +12,7 @@ const { protect } = require('../middleware/auth');
 // All routes require authentication
 router.use(protect);
 
-// Routes
+// Category routes
 router.route('/')
   .get(getCategories)      // GET /api/categories
   .post(createCategory);   // POST /api/categories

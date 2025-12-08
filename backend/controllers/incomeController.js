@@ -1,16 +1,17 @@
 const Income = require('../models/Income');
+const Category = require('../models/Category');
 
 // @desc    Get all incomes for logged-in user
 // @route   GET /api/incomes
 // @access  Private
 const getIncomes = async (req, res) => {
   try {
-    // Build query
+    // Build query object
     const query = { userId: req.user._id };
 
-    // Filter by income type if provided
-    if (req.query.incomeType) {
-      query.incomeType = req.query.incomeType;
+    // Filter by category if provided
+    if (req.query.categoryId) {
+      query.categoryId = req.query.categoryId;
     }
 
     // Filter by date range if provided
@@ -21,8 +22,10 @@ const getIncomes = async (req, res) => {
       };
     }
 
-    // Get incomes
-    const incomes = await Income.find(query).sort({ date: -1 });
+    // Get incomes with category details populated
+    const incomes = await Income.find(query)
+      .populate('categoryId', 'type')
+      .sort({ date: -1 });
 
     // Calculate total
     const total = incomes.reduce((sum, income) => sum + income.amount, 0);
@@ -48,7 +51,8 @@ const getIncomes = async (req, res) => {
 // @access  Private
 const getIncome = async (req, res) => {
   try {
-    const income = await Income.findById(req.params.id);
+    const income = await Income.findById(req.params.id)
+      .populate('categoryId', 'type');
 
     if (!income) {
       return res.status(404).json({
@@ -84,24 +88,43 @@ const getIncome = async (req, res) => {
 // @access  Private
 const createIncome = async (req, res) => {
   try {
-    const { amount, incomeType, date, description } = req.body;
+    const { categoryId, amount, date, note } = req.body;
 
     // Validation
-    if (!amount || !incomeType) {
+    if (!categoryId || !amount) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide amount and income type'
+        message: 'Please provide category and amount'
+      });
+    }
+
+    // Verify category exists and belongs to user
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    if (category.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to use this category'
       });
     }
 
     // Create income
     const income = await Income.create({
       userId: req.user._id,
+      categoryId,
       amount,
-      incomeType,
       date: date || Date.now(),
-      description
+      note
     });
+
+    // Populate category details
+    await income.populate('categoryId', 'type');
 
     res.status(201).json({
       success: true,
@@ -140,12 +163,29 @@ const updateIncome = async (req, res) => {
       });
     }
 
+    // If updating category, verify it exists and belongs to user
+    if (req.body.categoryId) {
+      const category = await Category.findById(req.body.categoryId);
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: 'Category not found'
+        });
+      }
+      if (category.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Not authorized to use this category'
+        });
+      }
+    }
+
     // Update income
     income = await Income.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    );
+    ).populate('categoryId', 'type');
 
     res.status(200).json({
       success: true,
@@ -226,8 +266,8 @@ const getIncomeStats = async (req, res) => {
 
     const totalThisMonth = monthlyIncomes.reduce((sum, inc) => sum + inc.amount, 0);
 
-    // By income type
-    const byType = await Income.aggregate([
+    // By category
+    const byCategory = await Income.aggregate([
       {
         $match: {
           userId: userId,
@@ -236,9 +276,27 @@ const getIncomeStats = async (req, res) => {
       },
       {
         $group: {
-          _id: '$incomeType',
+          _id: '$categoryId',
           total: { $sum: '$amount' },
           count: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'category'
+        }
+      },
+      {
+        $unwind: '$category'
+      },
+      {
+        $project: {
+          categoryName: '$category.type',
+          total: 1,
+          count: 1
         }
       },
       {
@@ -251,7 +309,7 @@ const getIncomeStats = async (req, res) => {
       data: {
         totalThisMonth,
         incomeCount: monthlyIncomes.length,
-        byType,
+        byCategory,
         period: {
           start: startOfMonth,
           end: endOfMonth

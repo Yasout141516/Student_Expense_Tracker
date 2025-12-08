@@ -5,10 +5,10 @@ const Category = require('../models/Category');
 // @access  Private
 const getCategories = async (req, res) => {
   try {
-    // Find all categories belonging to the logged-in user
-    // req.user is set by protect middleware
-    const categories = await Category.find({ userId: req.user._id })
-      .sort({ createdAt: -1 }); // Sort by newest first
+    // Get all user's categories
+    const categories = await Category.find({ 
+      userId: req.user._id 
+    }).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -32,7 +32,6 @@ const getCategory = async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
 
-    // Check if category exists
     if (!category) {
       return res.status(404).json({
         success: false,
@@ -67,34 +66,39 @@ const getCategory = async (req, res) => {
 // @access  Private
 const createCategory = async (req, res) => {
   try {
-    const { type } = req.body;
+    console.log('=== CREATE CATEGORY REQUEST ===');
+    console.log('Body:', req.body);
+    console.log('User:', req.user._id);
+    
+    const { type, categoryType } = req.body;
 
     // Validation
     if (!type) {
+      console.log('Error: No type provided');
       return res.status(400).json({
         success: false,
-        message: 'Please provide category type'
+        message: 'Please provide category name'
       });
     }
 
-    // Check if category already exists for this user
-    const categoryExists = await Category.findOne({
-      userId: req.user._id,
-      type: type.trim()
-    });
-
-    if (categoryExists) {
+    if (!categoryType) {
+      console.log('Error: No categoryType provided');
       return res.status(400).json({
         success: false,
-        message: 'Category already exists'
+        message: 'Please specify category type (income or expense)'
       });
     }
+
+    console.log('Creating category:', { userId: req.user._id, type, categoryType });
 
     // Create category
     const category = await Category.create({
       userId: req.user._id,
-      type: type.trim()
+      type,
+      categoryType
     });
+
+    console.log('Category created successfully:', category);
 
     res.status(201).json({
       success: true,
@@ -102,7 +106,18 @@ const createCategory = async (req, res) => {
       data: category
     });
   } catch (error) {
-    console.error('Create category error:', error);
+    console.error('=== CREATE CATEGORY ERROR ===');
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    
+    // Handle duplicate category error
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category with this name already exists'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Server error',
@@ -116,9 +131,6 @@ const createCategory = async (req, res) => {
 // @access  Private
 const updateCategory = async (req, res) => {
   try {
-    const { type } = req.body;
-
-    // Find category
     let category = await Category.findById(req.params.id);
 
     if (!category) {
@@ -136,18 +148,17 @@ const updateCategory = async (req, res) => {
       });
     }
 
-    // Check if new name already exists for this user
-    if (type) {
-      const duplicate = await Category.findOne({
+    // Check for duplicate category name
+    if (req.body.type && req.body.type !== category.type) {
+      const existingCategory = await Category.findOne({
         userId: req.user._id,
-        type: type.trim(),
-        _id: { $ne: req.params.id } // Exclude current category
+        type: req.body.type
       });
 
-      if (duplicate) {
+      if (existingCategory) {
         return res.status(400).json({
           success: false,
-          message: 'Category name already exists'
+          message: 'Category with this name already exists'
         });
       }
     }
@@ -155,7 +166,7 @@ const updateCategory = async (req, res) => {
     // Update category
     category = await Category.findByIdAndUpdate(
       req.params.id,
-      { type: type.trim() },
+      req.body,
       { new: true, runValidators: true }
     );
 
@@ -198,12 +209,12 @@ const deleteCategory = async (req, res) => {
 
     // Check if category is being used in expenses
     const Expense = require('../models/Expense');
-    const expenseCount = await Expense.countDocuments({ categoryId: category._id });
+    const expenseCount = await Expense.countDocuments({ categoryId: req.params.id });
 
     if (expenseCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `Cannot delete category. It is being used in ${expenseCount} expense(s)`
+        message: `Cannot delete category. It is being used by ${expenseCount} expense(s)`
       });
     }
 
@@ -231,3 +242,4 @@ module.exports = {
   updateCategory,
   deleteCategory
 };
+
