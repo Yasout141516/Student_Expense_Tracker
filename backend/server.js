@@ -16,13 +16,22 @@ const app = express();
 app.use(cors()); // Enable CORS for frontend requests
 app.use(express.json()); // Parse JSON request bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
-
-// Import routes
 const authRoutes = require('./routes/authRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const incomeRoutes = require('./routes/incomeRoutes');
+const budgetRoutes = require('./routes/budgetRoutes');
+const goalRoutes = require('./routes/goalRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Mount routes
 app.use('/api/auth', authRoutes);
-
+app.use('/api/categories', categoryRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/incomes', incomeRoutes);
+app.use('/api/budgets', budgetRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 // Basic test route
 app.get('/', (req, res) => {
   res.json({ 
